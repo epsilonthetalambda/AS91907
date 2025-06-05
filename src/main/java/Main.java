@@ -1,5 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
+import java.util.Iterator;
 
 public class Main {
     static final Window window = new Window(); // The window where statistics and customisation happens
@@ -9,14 +10,16 @@ public class Main {
     // Simulation parameters
     private static int WIDTH = 100;
     private static int HEIGHT = 100;
-    private static int PEOPLE = 30;
-    private static int INFECTED = 1;
+    private static int PEOPLE = 990;
+    private static int INFECTED = 10;
     private static double INFECTION_CHANCE = 0.5;
     private static int INFECTION_COOLDOWN = 10;
     private static int IMMUNITY_COOLDOWN = 10;
+    private static int STEPS = 100;
 
     private static Person[] row;
     private static Person[] column;
+    private static Iterator<Person> iterator;
 
     public static void main(String[] args) {
         window.setVisible(true);
@@ -28,10 +31,40 @@ public class Main {
 
         for (int i = 0; i < PEOPLE; i++) { // Generates the people
             if (Math.random() < 0.5) {
-                new Person(true, HEIGHT, WIDTH, (i < INFECTED) ? 1 : 0);
+                new Person(true, (int) (Math.random() * HEIGHT), (int) (Math.random() * WIDTH), (i < INFECTED) ? 1 : 0);
             } else {
-                new Person(false, WIDTH, HEIGHT, (i < INFECTED) ? 1 : 0);
+                new Person(false, (int) (Math.random() * WIDTH), (int) (Math.random() * HEIGHT), (i < INFECTED) ? 1 : 0);
             }
+        }
+        iterator = new Iterator<Person>() {
+            boolean going = false;
+            boolean horizontal = true;
+            int i = 0;
+            Person current = row[0];
+            @Override
+            public boolean hasNext() {
+                if (going) current = current.pointer;
+                else going = true;
+                while (going && current == null) {
+                    i++;
+                    if (i >= (horizontal ? HEIGHT : WIDTH)) {
+                        i = 0;
+                        horizontal = !horizontal;
+                        going = horizontal;
+                    }
+                    current = (horizontal ? row : column)[i];
+                }
+                return going;
+            }
+            @Override
+            public Person next() {
+                return current;
+            }
+        };
+        for (; STEPS > 0; STEPS --) {
+            iterator.forEachRemaining(Person::move);
+            iterator.forEachRemaining(Person::increment);
+            iterator.forEachRemaining(Person::update);
         }
     }
 
@@ -65,9 +98,11 @@ public class Main {
                 pos --;
             }
         }
-        private void preInfection() {
+        private void increment() {
             if (state != 0) {
-                if (state <= INFECTION_COOLDOWN) infect();
+                if (state <= INFECTION_COOLDOWN) {
+                    infect();
+                };
                 state ++;
             }
         }
@@ -83,9 +118,10 @@ public class Main {
                 person = person.pointer;
             }
         }
-        private void postInfection() {
+        private void update() {
             if (infected) state = 1;
             else if (state > INFECTION_COOLDOWN + IMMUNITY_COOLDOWN) state = 0;
+            System.out.println(state);
         }
     }
 
