@@ -61,8 +61,10 @@ public class Person {
         if (infected) {
             infected = false;
             state = 1;
-        } else if (state >= Main.IMMUNITY_COOLDOWN) state = 0;
-        else state ++;
+        } else if (state > 0) {
+            state ++;
+            if (state > Main.IMMUNITY_COOLDOWN) state = 0;
+        }
         return state();
     }
 }
