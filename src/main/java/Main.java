@@ -1,171 +1,111 @@
-import javax.swing.*;
-import java.awt.*;
-import java.util.Iterator;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.SwingConstants;
+import java.awt.Color;
+import java.awt.GridLayout;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
 
 public class Main {
-    static final Window window = new Window(); // The window where statistics and customisation happens
-    private static final Simulation simulation = new Simulation(); // The window where the simulation is rendered
-    private static Graphics graphics; // The graphics of the simulation
+    static final Window window = new Window(); // The window where statistics and customisation happen
+    static Render simulation;
+    private static ArrayList<Tick> history;
 
     // Simulation parameters
-    private static int WIDTH = 100;
-    private static int HEIGHT = 100;
-    private static int PEOPLE = 990;
-    private static int INFECTED = 10;
-    private static double INFECTION_CHANCE = 0.5;
-    private static int INFECTION_COOLDOWN = 10;
-    private static int IMMUNITY_COOLDOWN = 10;
-    private static int STEPS = 100;
+    public static int WIDTH = 100; // Width of the simulation
+    public static int HEIGHT = 100; // Height of the simulation
+    public static int PEOPLE = 10000; // Number of simulated people
+    public static int INFECTED = 100; // Number of infected people
+    public static double INFECTION_CHANCE = 0.5; // Chance for each infected person to infect a normal person
+    public static int INFECTION_COOLDOWN = 10; // Number of ticks since infection that a person can infect others
+    public static int IMMUNITY_COOLDOWN = INFECTION_COOLDOWN + 10; // Number of ticks since infection that a person cannot get reinfected
+    public static int TICKS = 10000; // Number of ticks the simulation runs for. < 0 is considered endless
 
-    private static Person[] row;
-    private static Person[] column;
-    private static Iterator<Person> iterator;
+    public static Person[] row; // Stores horizontally moving people
+    public static Person[] column; // Stores vertically moving people
+
+    private static final Looper looper = new Looper(); // Used to iterate through each person
 
     public static void main(String[] args) {
-        window.setVisible(true);
-        simulation.setVisible(true);
-        graphics = simulation.getGraphics();
 
         row = new Person[HEIGHT];
         column = new Person[WIDTH];
 
-        for (int i = 0; i < PEOPLE; i++) { // Generates the people
-            if (Math.random() < 0.5) {
-                new Person(true, (int) (Math.random() * HEIGHT), (int) (Math.random() * WIDTH), (i < INFECTED) ? 1 : 0);
-            } else {
-                new Person(false, (int) (Math.random() * WIDTH), (int) (Math.random() * HEIGHT), (i < INFECTED) ? 1 : 0);
-            }
-        }
-        iterator = new Iterator<Person>() {
-            boolean going = false;
-            boolean horizontal = true;
-            int i = 0;
-            Person current = row[0];
+        simulation = new Render(window) {
             @Override
-            public boolean hasNext() {
-                if (going) current = current.pointer;
-                else going = true;
-                while (going && current == null) {
-                    i++;
-                    if (i >= (horizontal ? HEIGHT : WIDTH)) {
-                        i = 0;
-                        horizontal = !horizontal;
-                        going = horizontal;
+            public void createImage() {
+                image = new Image(w, h) {
+                    @Override
+                    public void render() {
+                        g.setColor(Color.BLACK);
+                        g.drawRect(w/3, h/3, w/3, h/3);
                     }
-                    current = (horizontal ? row : column)[i];
-                }
-                return going;
-            }
-            @Override
-            public Person next() {
-                return current;
+                };
             }
         };
-        for (; STEPS > 0; STEPS --) {
-            iterator.forEachRemaining(Person::move);
-            iterator.forEachRemaining(Person::increment);
-            iterator.forEachRemaining(Person::update);
+
+        for (int i = 0; i < PEOPLE; i++) { // Generates the people
+            new Person(i < INFECTED);
         }
+
+        history = new ArrayList<>(Math.max(TICKS, 0) + 1); // Initialises history with enough initial capacity, unless endless
+        history.add(new Tick(PEOPLE - INFECTED, INFECTED, 0)); // Adds the initial state
+        looper.reset(); // Resets the looper
+        for (; TICKS != 0; TICKS--) {
+            history.add(looper.go()); // Runs the looper's main functions
+            window.refresh(); // Refreshes the window
+        }
+
+        try { // Writes to CSV, using Tick's custom toString() function
+            FileWriter writer = new FileWriter("output.csv");
+            for (Tick tick : history) {
+                writer.write(tick.toString());
+            }
+            writer.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
-    private static class Person { // Stores a person in the simulation
-        // Position
-        private final boolean horizontal;
-        private final int lane;
-        private int pos;
-        private boolean forwards;
-        private int state; // Current state. == 0 -> normal, <= INFECTION_COOLDOWN -> infected, else -> immune, wraps back to 0
-        private boolean infected = false;
-        private final Person pointer;
-        private Person(boolean horizontal, int lane, int pos, int state) {
-            this.horizontal = horizontal;
-            this.lane = lane;
-            this.pos = pos;
-            this.pointer = (horizontal ? row : column)[lane];
-            (horizontal ? row : column)[lane] = this;
-            forwards = (Math.random() < 0.5);
-            this.state = state;
-        }
-        private void move() {
-            if (pos == 0) {
-                forwards = true;
-            } else if (pos == (horizontal ? WIDTH : HEIGHT) - 1) {
-                forwards = false;
-            }
-            if (forwards) {
-                pos ++;
-            } else {
-                pos --;
-            }
-        }
-        private void increment() {
-            if (state != 0) {
-                if (state <= INFECTION_COOLDOWN) {
-                    infect();
-                };
-                state ++;
-            }
-        }
-        private void infect() {
-            Person person = (horizontal ? row : column)[lane];
-            while (person != null) {
-                if (person.state == 0 && pos == person.pos && Math.random() < INFECTION_CHANCE) person.infected = true;
-                person = person.pointer;
-            }
-            person = (horizontal ? column : row)[pos];
-            while (person != null) {
-                if (person.state == 0 && lane == person.pos && Math.random() < INFECTION_CHANCE) person.infected = true;
-                person = person.pointer;
-            }
-        }
-        private void update() {
-            if (infected) state = 1;
-            else if (state > INFECTION_COOLDOWN + IMMUNITY_COOLDOWN) state = 0;
-            System.out.println(state);
-        }
-    }
-
-    private static class Window extends JFrame { // The window where you can view statistics and change
-        private final JLabel[][] statLabel = new JLabel[3][2]; // Mirrors stat[][], but for display purposes
+    private static class Window extends JFrame { // The window where you can view statistics. Will probably be refactored
+        private final JLabel[] statLabel = new JLabel[3];
         private Window() {
             setDefaultCloseOperation(EXIT_ON_CLOSE);
-            for (int i = 0; i < 6; i++) { // Initialises the stat labels
+            for (int i = 0; i < 3; i++) { // Initialises the stat labels
                 JLabel l = new JLabel();
                 l.setHorizontalAlignment(SwingConstants.CENTER);
-                statLabel[i % 3][i % 2] = l;
+                statLabel[i] = l;
             }
 
             // Adds the labels to the window
-
-            setLayout(new GridLayout(4,3));
-
-            addLabel("Category");
-            addLabel("Change");
-            addLabel("Total");
+            setLayout(new GridLayout(3,2));
 
             addLabel("Normal");
-            add(statLabel[0][0]);
-            add(statLabel[0][1]);
+            add(statLabel[0]);
 
             addLabel("Infected");
-            add(statLabel[1][0]);
-            add(statLabel[1][1]);
+            add(statLabel[1]);
 
             addLabel("Immune");
-            add(statLabel[2][0]);
-            add(statLabel[2][1]);
+            add(statLabel[2]);
+
+            setVisible(true);
         }
 
-        private void addLabel(String text) { // Adds a centred label
+        private void addLabel(String text) { // Adds a centred label to the window
             JLabel l = new JLabel(text);
             l.setHorizontalAlignment(SwingConstants.CENTER);
             add(l);
         }
-    }
 
-    private static class Simulation extends JDialog { // The dialog where you can watch the simulation running
-        private Simulation() {
-            super(window);
+        private void refresh() { // Updates the labels with new values
+            Tick tick = history.getLast(); // Gets the current tick
+            for (int i = 0; i < 3; i++) {
+                statLabel[i].setText(Integer.toString(tick.get(Person.State.values()[i]))); // Updates each label
+            }
+            setTitle(Integer.toString(TICKS)); // For debug purposes
         }
     }
 }
