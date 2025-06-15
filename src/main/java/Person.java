@@ -30,7 +30,7 @@ public class Person {
     public Person(boolean infected) { // Constructor, whether we start infected
         horizontal = Math.random() < 0.5; // Randomises axis
         lane = (int) (Math.random() * (horizontal ? Main.HEIGHT : Main.WIDTH)); // Randomises the lane
-        MAX_POS = (horizontal ? Main.HEIGHT : Main.WIDTH) - 1; // Stores the max pos
+        MAX_POS = (horizontal ? Main.WIDTH : Main.HEIGHT) - 1; // Stores the max pos
         step = (int) (MAX_POS * 2 * Math.random()); // Randomises the current step
         pointer = (horizontal ? Main.row : Main.column)[lane]; // Sets the pointer to the previous person in the same lane
         (horizontal ? Main.row : Main.column)[lane] = this; // Adds itself to the stack
