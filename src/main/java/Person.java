@@ -25,36 +25,33 @@ public class Person {
     }
 
     private boolean infected = false; // Whether we will become infected next round
-    public final Person pointer; // The next Person in the list
+    public Person next; // The next Person in the list
 
     public Person(boolean infected) { // Constructor, whether we start infected
         horizontal = Math.random() < 0.5; // Randomises axis
         lane = (int) (Math.random() * (horizontal ? Main.HEIGHT : Main.WIDTH)); // Randomises the lane
         MAX_POS = (horizontal ? Main.WIDTH : Main.HEIGHT) - 1; // Stores the max pos
         step = (int) (MAX_POS * 2 * Math.random()); // Randomises the current step
-        pointer = (horizontal ? Main.row : Main.column)[lane]; // Sets the pointer to the previous person in the same lane
+        next = (horizontal ? Main.row : Main.column)[lane]; // Sets the pointer to the previous person in the same lane
         (horizontal ? Main.row : Main.column)[lane] = this; // Adds itself to the stack
         state = (infected ? (int) (Math.random() * Main.INFECTION_COOLDOWN) + 1 : 0); // If infected, sets state to somewhere in infected range. Otherwise, normal
     }
     public void move() { // Increments and wraps the step
         step ++;
-        if (step == 2 * MAX_POS) step = 0;
+        if (step >= 2 * MAX_POS) step = 0;
     }
     public void spread() {
         if (state() == State.INFECTED) { // Tries to infect others if able
-            infect((horizontal ? Main.row : Main.column)[lane]);
-            infect((horizontal ? Main.column : Main.row)[pos()]);
+            infect((horizontal ? Main.row : Main.column)[lane], pos());
+            infect((horizontal ? Main.column : Main.row)[pos()], lane);
         }
     }
-    private void infect(Person p) { // Takes a person, runs down their list, checks for matches in position, then tries to infect
-        while (p != null) {
-            if (p.state() == State.NORMAL && match(p) && Math.random() < Main.INFECTION_CHANCE) p.infected = true;
-            p = p.pointer;
+    private void infect(Person p, int pos) { // Takes a person, runs down their list, checks for matches in position, then tries to infect
+        p = Main.search(p, pos);
+        while (p != null && p.pos() == pos) {
+            if (p.state() == State.NORMAL && Math.random() < Main.INFECTION_CHANCE) p.infected = true;
+            p = p.next;
         }
-    }
-    private boolean match(Person p) { // Checks if position overlaps with given person, assuming other person's lane already matches
-        if (p.horizontal == horizontal) return (pos() == p.pos());
-        else return (lane == p.pos());
     }
 
     public State update() { // Updates the person's state. Returns it for tallying
@@ -66,5 +63,15 @@ public class Person {
             if (state > Main.IMMUNITY_COOLDOWN) state = 0;
         }
         return state();
+    }
+    public Person popNext() {
+        Person p = next;
+        next = null;
+        return p;
+    }
+    public static boolean ordered(Person a, Person b) {
+        if (a == null) return false;
+        if (b == null) return true;
+        return (a.pos() <= b.pos());
     }
 }

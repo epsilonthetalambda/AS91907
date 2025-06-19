@@ -15,6 +15,7 @@ public class Looper implements Iterator<Person> { // Loops through each person a
 
     public Tick go() { // Main tasks. Uses Iterator methods
         forEachRemaining(Person::move); // Changes positions
+        Main.sortLists();
         forEachRemaining(Person::spread); // Spreads infections
         AtomicInteger normal = new AtomicInteger(), infected = new AtomicInteger(), immune = new AtomicInteger(); // Initialises tallies
         forEachRemaining(person -> (switch (person.update()) { // Updates states. The function returns the person's state, so it is used to tally.
@@ -28,7 +29,7 @@ public class Looper implements Iterator<Person> { // Loops through each person a
 
     @Override
     public boolean hasNext() { // Returns whether there are still people left to check. Also adjusts the pointer, because its more convenient to do it here
-        if (going) current = current.pointer; // If this isn't the first time, shift the pointer down the list
+        if (going) current = current.next; // If this isn't the first time, shift the pointer down the list
         else going = true;
         while (going && current == null) { // If there is still more to check, and we have a null pointer
             i++; // Increment the index

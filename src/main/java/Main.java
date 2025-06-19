@@ -56,6 +56,22 @@ public class Main {
             history.add(looper.go()); // Runs the looper's main functions
             window.refresh(); // Refreshes the window
         }
+        for (Person p : row) {
+            while (p != null) {
+                System.out.print(p.pos());
+                System.out.print(",");
+                p = p.next;
+            }
+            System.out.println();
+        }
+        for (Person p : column) {
+            while (p != null) {
+                System.out.print(p.pos());
+                System.out.print(",");
+                p = p.next;
+            }
+            System.out.println();
+        }
 
         try { // Writes to CSV, using Tick's custom toString() function
             FileWriter writer = new FileWriter("output.csv");
@@ -67,6 +83,82 @@ public class Main {
             throw new RuntimeException(e);
         }
 
+    }
+
+    public static void sortLists() {
+        boolean horizontal = true;
+        do {
+            for (int i = 0; i < (horizontal ? HEIGHT : WIDTH); i++) {
+                Person head = (horizontal ? row : column)[i];
+                int s;
+                Person p = head;
+                for (s = 0; p != null; s++) {
+                    p = p.next;
+                }
+                (horizontal ? row : column)[i] = mergeSort(head, s);
+            }
+            horizontal = !horizontal;
+        } while (!horizontal);
+    }
+
+    private static Person mergeSort(Person head, int size) {
+        if (size <= 1) return head;
+        int i;
+        Person p1 = head, p2 = head;
+        for (i = 0; i < size/2 - 1; i++) {
+            p2 = p2.next;
+        }
+        i ++;
+        p2 = p2.popNext();
+
+        p1 = mergeSort(p1, i);
+        p2 = mergeSort(p2, size - i);
+        if (Person.ordered(p1, p2)) {
+            head = p1;
+            p1 = p1.next;
+        } else {
+            head = p2;
+            p2 = p2.next;
+        }
+        Person p3 = head;
+        while (p1 != null || p2 != null) {
+            if (Person.ordered(p1, p2)) {
+                p3.next = p1;
+                p1 = p1.next;
+            } else {
+                p3.next = p2;
+                p2 = p2.next;
+            }
+            p3 = p3.next;
+        }
+        return head;
+    }
+    public static Person search(Person start, int pos) {
+        if (start == null) return null;
+        Person end = start, middle = start;
+        while (end.next != null) {
+            end = end.next;
+        }
+        do {
+            if (middle.pos() >= pos) {
+                end = middle;
+            } else start = middle;
+            middle = middle(start, end);
+        } while (middle != start);
+        if (middle.pos() != pos) {
+            middle = middle.next;
+        }
+        return middle;
+    }
+    private static Person middle(Person start, Person end) {
+        Person fast = start, slow = start;
+        boolean step = false;
+        while (fast != end) {
+            fast = fast.next;
+            if (step) slow = slow.next;
+            step = !step;
+        }
+        return slow;
     }
 
     private static class Window extends JFrame { // The window where you can view statistics. Will probably be refactored
