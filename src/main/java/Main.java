@@ -22,15 +22,14 @@ public class Main {
     public static int IMMUNITY_COOLDOWN = INFECTION_COOLDOWN + 20; // Number of ticks since infection that a person cannot get reinfected
     public static int TICKS = 10000; // Number of ticks the simulation runs for. < 0 is considered endless
 
-    public static Person[] row; // Stores horizontally moving people
-    public static Person[] column; // Stores vertically moving people
+    public static Person[][] position;
+    public static Person[][] movement;
 
     private static final Looper looper = new Looper(); // Used to iterate through each person
 
     public static void main(String[] args) {
 
-        row = new Person[HEIGHT];
-        column = new Person[WIDTH];
+        movement = new Person[WIDTH][HEIGHT];
 
         simulation = new Render(window) {
             @Override
@@ -49,9 +48,10 @@ public class Main {
             new Person(i < INFECTED);
         }
 
+        finishMovement();
+
         history = new ArrayList<>(Math.max(TICKS, 0) + 1); // Initialises history with enough initial capacity, unless endless
         history.add(new Tick(PEOPLE - INFECTED, INFECTED, 0)); // Adds the initial state
-        looper.reset(); // Resets the looper
         for (; TICKS != 0; TICKS--) {
             history.add(looper.go()); // Runs the looper's main functions
             window.refresh(); // Refreshes the window
@@ -67,6 +67,11 @@ public class Main {
             throw new RuntimeException(e);
         }
 
+    }
+
+    public static void finishMovement() {
+        position = movement;
+        movement = new Person[WIDTH][HEIGHT];
     }
 
     private static class Window extends JFrame { // The window where you can view statistics. Will probably be refactored

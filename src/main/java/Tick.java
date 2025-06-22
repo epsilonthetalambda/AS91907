@@ -6,6 +6,9 @@ public record Tick(int normal, int infected, int immune) { // Stores the totals 
             case IMMUNE -> immune;
         };
     }
+    public Tick(int[] count) {
+        this(count[0], count[1], count[2]);
+    }
     @Override
     public String toString() { // Outputs a CSV line corresponding to the tick's totals
         return normal + "," + infected + ',' + immune + System.lineSeparator();
