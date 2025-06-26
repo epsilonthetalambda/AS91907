@@ -50,13 +50,23 @@ public class Person {
     }
     private void reposition() {
         next = Main.movement[x()][y()];
-        Main.movement[x()][y()] = this;
+        if (next == null || state <= next.state) {
+            Main.movement[x()][y()] = this;
+        } else {
+            Person nextnext = next.next;
+            while (nextnext != null && state > nextnext.state) {
+                next = nextnext;
+                nextnext = next.next;
+            }
+            next.next = this;
+            next = nextnext;
+        }
     }
     public void spread() {
         if (state() == State.INFECTED) { // Tries to infect others if able
             Person p = Main.position[x()][y()];
-            while (p != null) {
-                if (p.state() == State.NORMAL && Math.random() < Main.INFECTION_CHANCE) p.infected = true;
+            while (p != null && p.state() == State.NORMAL) {
+                if (Math.random() < Main.INFECTION_CHANCE) p.infected = true;
                 p = p.next;
             }
         }
