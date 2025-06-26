@@ -31,18 +31,6 @@ public class Main {
 
         movement = new Person[WIDTH][HEIGHT];
 
-        simulation = new Render(window) {
-            @Override
-            public Image newImage() {
-                return new Image(w, h) {
-                    @Override
-                    public void render() {
-                        g.setColor(Color.BLACK);
-                        g.drawRect(w/3, h/3, w/3, h/3);
-                    }
-                };
-            }
-        };
 
         for (int i = 0; i < PEOPLE; i++) { // Generates the people
             new Person(i < INFECTED);
@@ -50,8 +38,44 @@ public class Main {
 
         finishMovement();
 
+
+
         history = new ArrayList<>(Math.max(TICKS, 0) + 1); // Initialises history with enough initial capacity, unless endless
         history.add(new Tick(PEOPLE - INFECTED, INFECTED, 0)); // Adds the initial state
+
+        simulation = new Render(window) {
+            @Override
+            public Image newImage() {
+                return new Image(w, h) {
+                    @Override
+                    public void render() {
+                        for (int x = 0; x < Main.WIDTH; x++) {
+                            for (int y = 0; y < Main.HEIGHT; y++) {
+                                Person.State rendered = null;
+                                Person p = Main.position[x][y];
+                                if (p != null) {
+                                    rendered = Person.State.NORMAL;
+                                    for (; p != null; p = p.next) {
+                                        if (p.state() != Person.State.NORMAL) {
+                                            rendered = p.state();
+                                            break;
+                                        }
+                                    }
+                                }
+                                g.setColor(switch (rendered) {
+                                    case null -> Color.WHITE;
+                                    case NORMAL -> Color.GREEN;
+                                    case INFECTED -> Color.RED;
+                                    case IMMUNE -> Color.BLUE;
+                                });
+                                g.fillRect(x * w, y * h, w, h);
+                            }
+                        }
+                    }
+                };
+            }
+        };
+
         for (; TICKS != 0; TICKS--) {
             history.add(looper.go()); // Runs the looper's main functions
             window.refresh(); // Refreshes the window
