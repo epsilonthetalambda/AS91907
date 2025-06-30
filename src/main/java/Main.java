@@ -13,14 +13,18 @@ public class Main {
     private static ArrayList<Tick> history;
 
     // Simulation parameters
-    public static int WIDTH = 100; // Width of the simulation
-    public static int HEIGHT = 100; // Height of the simulation
-    public static int PEOPLE = 100000; // Number of simulated people
-    public static int INFECTED = 10; // Number of infected people
-    public static double INFECTION_CHANCE = 0.65; // Chance for each infected person to infect a normal person
+    public static int WIDTH = 256; // Width of the simulation
+    public static int HEIGHT = 256; // Height of the simulation
+    public static int PEOPLE = 65536; // Number of simulated people
+    public static int INFECTED = 16; // Number of infected people
+    public static double INFECTION_CHANCE = 0.5; // Chance for each infected person to infect a normal person
     public static int INFECTION_COOLDOWN = 8; // Number of ticks since infection that a person can infect others
-    public static int IMMUNITY_COOLDOWN = INFECTION_COOLDOWN + 20; // Number of ticks since infection that a person cannot get reinfected
-    public static int TICKS = 10000; // Number of ticks the simulation runs for. < 0 is considered endless
+    public static int IMMUNITY_COOLDOWN = INFECTION_COOLDOWN + 8; // Number of ticks since infection that a person cannot get reinfected
+    public static int TICKS = 65536; // Number of ticks the simulation runs for. < 0 is considered endless
+    public static Color EMPTY_COLOR = Color.BLACK;
+    public static Color NORMAL_COLOR = Color.GREEN;
+    public static Color INFECTED_COLOR = Color.RED;
+    public static Color IMMUNE_COLOR = Color.BLUE;
 
     public static Person[][] position;
     public static Person[][] movement;
@@ -28,7 +32,6 @@ public class Main {
     private static final Looper looper = new Looper(); // Used to iterate through each person
 
     public static void main(String[] args) {
-
         movement = new Person[WIDTH][HEIGHT];
 
 
@@ -43,10 +46,14 @@ public class Main {
         history = new ArrayList<>(Math.max(TICKS, 0) + 1); // Initialises history with enough initial capacity, unless endless
         history.add(new Tick(PEOPLE - INFECTED, INFECTED, 0)); // Adds the initial state
 
-        simulation = new Render(window) {
+        simulation = new Render("Simulation", Main.WIDTH, Main.HEIGHT) {
+            private int gridW, gridH;
             @Override
             public Image newImage() {
-                return new Image(w, h) {
+                int newGridW = w / Main.WIDTH, newGridH = h / Main.WIDTH;
+                if (gridW == newGridW && gridH == newGridH) return image;
+                gridW = newGridW; gridH = newGridH;
+                return new Image(gridW * Main.WIDTH, gridH * Main.HEIGHT) {
                     @Override
                     public void render() {
                         for (int x = 0; x < Main.WIDTH; x++) {
@@ -63,12 +70,12 @@ public class Main {
                                     }
                                 }
                                 g.setColor(switch (rendered) {
-                                    case null -> Color.WHITE;
-                                    case NORMAL -> Color.GREEN;
-                                    case INFECTED -> Color.RED;
-                                    case IMMUNE -> Color.BLUE;
+                                    case null -> EMPTY_COLOR;
+                                    case NORMAL -> NORMAL_COLOR;
+                                    case INFECTED -> INFECTED_COLOR;
+                                    case IMMUNE -> IMMUNE_COLOR;
                                 });
-                                g.fillRect(x * w, y * h, w, h);
+                                g.fillRect(x * gridW, y * gridH, gridW, gridH);
                             }
                         }
                     }
