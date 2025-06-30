@@ -6,7 +6,7 @@ public class Looper { // Loops through each person and does tasks
     public Tick go() { // Main tasks. Uses Iterator methods
         forEachRemaining(Person::move); // Changes positions
         Main.finishMovement();
-        Main.simulation.render();
+        Main.simulation.repaint();
         forEachRemaining(Person::spread); // Spreads infections
         for (int i = 0; i < 3; i++) count[i] = 0;
         forEachRemaining(person ->

@@ -6,7 +6,7 @@ public abstract class Image extends BufferedImage { // Used to create custom gra
     public final int w; // Stores its width
     public final int h; // Stores its height
     public Image(int width, int height) {
-        super(width, height, TYPE_INT_ARGB);
+        super(width * Main.WIDTH, height * Main.HEIGHT, TYPE_INT_ARGB);
         w = width;
         h = height;
         g = getGraphics();

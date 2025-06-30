@@ -13,10 +13,10 @@ public class Main {
     private static ArrayList<Tick> history;
 
     // Simulation parameters
-    public static int WIDTH = 400; // Width of the simulation
-    public static int HEIGHT = 125; // Height of the simulation
-    public static int PEOPLE = 900000; // Number of simulated people
-    public static int INFECTED = 1; // Number of infected people
+    public static int WIDTH = 100; // Width of the simulation
+    public static int HEIGHT = 100; // Height of the simulation
+    public static int PEOPLE = 100000; // Number of simulated people
+    public static int INFECTED = 10; // Number of infected people
     public static double INFECTION_CHANCE = 0.65; // Chance for each infected person to infect a normal person
     public static int INFECTION_COOLDOWN = 8; // Number of ticks since infection that a person can infect others
     public static int IMMUNITY_COOLDOWN = INFECTION_COOLDOWN + 20; // Number of ticks since infection that a person cannot get reinfected
@@ -119,6 +119,7 @@ public class Main {
 
             addLabel("Immune");
             add(statLabel[2]);
+            pack();
 
             setVisible(true);
         }
