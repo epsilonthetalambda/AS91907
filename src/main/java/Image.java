@@ -2,11 +2,11 @@ import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 
 public abstract class Image extends BufferedImage { // Used to create custom graphics in Render
-    public final int w, h;
+    public final Simulation s;
     public final Graphics g; // Stores its graphics
-    public Image(int width, int height) {
+    public Image(Simulation s, int width, int height) {
         super(width, height, TYPE_INT_ARGB);
-        w = width; h = height;
+        this.s = s;
         g = getGraphics();
         render();
     }

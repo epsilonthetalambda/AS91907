@@ -1,4 +1,6 @@
 public class Person {
+    private final Simulation s;
+
     private final boolean horizontal; // Whether we are going horizontally or vertically
     private final int lane; // The lane we are in
 
@@ -28,20 +30,21 @@ public class Person {
     }
     public State state() { // Converts state to a State
         if (state == 0) return State.NORMAL;
-        else if (state <= Main.INFECTION_COOLDOWN) return State.INFECTED;
+        else if (state <= s.INFECTION_COOLDOWN) return State.INFECTED;
         else return State.IMMUNE;
     }
 
     private boolean infected = false; // Whether we will become infected next round
     public Person next = null; // The next Person in the list
 
-    public Person(boolean infected) { // Constructor, whether we start infected
+    public Person(Simulation s, boolean infected) { // Constructor, whether we start infected
+        this.s = s;
         horizontal = Math.random() < 0.5; // Randomises axis
-        lane = (int) (Math.random() * (horizontal ? Main.HEIGHT : Main.WIDTH)); // Randomises the lane
-        MAX_POS = (horizontal ? Main.WIDTH : Main.HEIGHT) - 1; // Stores the max pos
+        lane = (int) (Math.random() * (horizontal ? this.s.HEIGHT : this.s.WIDTH)); // Randomises the lane
+        MAX_POS = (horizontal ? this.s.WIDTH : this.s.HEIGHT) - 1; // Stores the max pos
         step = (int) (MAX_POS * 2 * Math.random()); // Randomises the current step
         reposition();
-        state = (infected ? (int) (Math.random() * Main.INFECTION_COOLDOWN) + 1 : 0); // If infected, sets state to somewhere in infected range. Otherwise, normal
+        state = (infected ? (int) (Math.random() * this.s.INFECTION_COOLDOWN) + 1 : 0); // If infected, sets state to somewhere in infected range. Otherwise, normal
     }
     public void move() { // Increments and wraps the step
         step ++;
@@ -49,9 +52,9 @@ public class Person {
         reposition();
     }
     private void reposition() {
-        next = Main.movement[x()][y()];
+        next = s.movement[x()][y()];
         if (next == null || state <= next.state) {
-            Main.movement[x()][y()] = this;
+            s.movement[x()][y()] = this;
         } else {
             Person nextnext = next.next;
             while (nextnext != null && state > nextnext.state) {
@@ -64,9 +67,9 @@ public class Person {
     }
     public void spread() {
         if (state() == State.INFECTED) { // Tries to infect others if able
-            Person p = Main.position[x()][y()];
+            Person p = s.position[x()][y()];
             while (p != null && p.state() == State.NORMAL) {
-                if (Math.random() < Main.INFECTION_CHANCE) p.infected = true;
+                if (Math.random() < s.INFECTION_CHANCE) p.infected = true;
                 p = p.next;
             }
         }
@@ -78,7 +81,7 @@ public class Person {
             state = 1;
         } else if (state > 0) {
             state ++;
-            if (state > Main.IMMUNITY_COOLDOWN) state = 0;
+            if (state > s.IMMUNITY_COOLDOWN) state = 0;
         }
         return state();
     }

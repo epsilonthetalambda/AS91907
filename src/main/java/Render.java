@@ -5,14 +5,17 @@ import java.awt.Graphics;
 
 public abstract class Render extends Container { // Displays a dialog with custom graphics using Image
     public int w, h; // Stores width and height
+    public Simulation s;
     public Image image; // Stores the image
-    public Render(String title, int initialW, int initialH) { // Creates a parent JDialog and attaches it to the main window
+    private final JFrame window;
+    public Render(Simulation s, String title, int initialW, int initialH) {
+        this.s = s;
         w = initialW;
         h = initialH;
-        image = newImage();
-        JFrame window = new JFrame(title);
-        window.setContentPane(this);
-        setPreferredSize(new Dimension(w, h));
+        newImage(); // Instantiates an image
+        window = new JFrame(title); // Creates a parent JFrame
+        window.setContentPane(this); // Makes itself the content pane
+        setPreferredSize(new Dimension(w, h)); // Sets its preferred size to minimum still visible
         window.pack();
         window.setVisible(true);
     }
@@ -25,14 +28,20 @@ public abstract class Render extends Container { // Displays a dialog with custo
 
     @Override
     public void paint(Graphics g) {
-        int newW = getWidth(), newH = getHeight();
-        if (w != newW || h != newH) {
+        int newW = getWidth(), newH = getHeight(); // Gets the current width and height
+        if (w != newW || h != newH) { // If not the same, updates and calls for new Image
             w = newW;
             h = newH;
-            image = newImage();
+            newImage();
         } // Generates a new image
-        g.drawImage(image, (getWidth() - image.w) / 2, (getHeight() - image.h) / 2, null); // Draws the image
+        g.drawImage(image, (getWidth() - image.getWidth()) / 2, (getHeight() - image.getHeight()) / 2, null); // Draws the image
     }
 
-    public abstract Image newImage(); // Where the image is initialised, allowing inherited abstraction
+    public abstract void newImage(); // Where the image is initialised, allowing inherited abstraction
+    public void toggle() { // Toggles visibility of the render
+        window.setVisible(!window.isVisible());
+    }
+    public void dispose() { // Closes the render
+        window.dispose();
+    }
 }
