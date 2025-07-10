@@ -28,7 +28,7 @@ public class Person {
         INFECTED,
         IMMUNE
     }
-    public State state() { // Converts state to a State
+    public State state() { // Converts integer state to a State
         if (state == 0) return State.NORMAL;
         else if (state <= s.INFECTION_COOLDOWN) return State.INFECTED;
         else return State.IMMUNE;
@@ -37,14 +37,14 @@ public class Person {
     private boolean infected = false; // Whether we will become infected next round
     public Person next = null; // The next Person in the list
 
-    public Person(Simulation s, boolean infected) { // Constructor, whether we start infected
+    public Person(Simulation s, int state) { // Constructor, whether we start infected
         this.s = s;
         horizontal = Math.random() < 0.5; // Randomises axis
         lane = (int) (Math.random() * (horizontal ? this.s.HEIGHT : this.s.WIDTH)); // Randomises the lane
         MAX_POS = (horizontal ? this.s.WIDTH : this.s.HEIGHT) - 1; // Stores the max pos
         step = (int) (MAX_POS * 2 * Math.random()); // Randomises the current step
         reposition();
-        state = (infected ? (int) (Math.random() * this.s.INFECTION_COOLDOWN) + 1 : 0); // If infected, sets state to somewhere in infected range. Otherwise, normal
+        this.state = state; // If infected, sets state to somewhere in infected range. Otherwise, normal
     }
     public void move() { // Increments and wraps the step
         step ++;

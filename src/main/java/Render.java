@@ -8,11 +8,11 @@ public abstract class Render extends Container { // Displays a dialog with custo
     public Simulation s;
     public Image image; // Stores the image
     private final JFrame window;
-    public Render(Simulation s, String title, int initialW, int initialH) {
+    public Render(Simulation s, String title, int w, int h) {
         this.s = s;
-        w = initialW;
-        h = initialH;
-        newImage(); // Instantiates an image
+        this.w = w;
+        this.h = h;
+        if (needNewImage()) newImage(); // Generates a new image
         window = new JFrame(title); // Creates a parent JFrame
         window.setContentPane(this); // Makes itself the content pane
         setPreferredSize(new Dimension(w, h)); // Sets its preferred size to minimum still visible
@@ -28,14 +28,13 @@ public abstract class Render extends Container { // Displays a dialog with custo
 
     @Override
     public void paint(Graphics g) {
-        int newW = getWidth(), newH = getHeight(); // Gets the current width and height
-        if (w != newW || h != newH) { // If not the same, updates and calls for new Image
-            w = newW;
-            h = newH;
-            newImage();
-        } // Generates a new image
-        g.drawImage(image, (getWidth() - image.getWidth()) / 2, (getHeight() - image.getHeight()) / 2, null); // Draws the image
+        w = getWidth();
+        h = getHeight();
+        if (needNewImage()) newImage(); // Generates a new image
+        g.drawImage(image, (w - image.w) / 2, (h - image.h) / 2, null); // Draws the image
     }
+
+    public abstract boolean needNewImage(); // Returns whether the image needs to be recreated
 
     public abstract void newImage(); // Where the image is initialised, allowing inherited abstraction
     public void toggle() { // Toggles visibility of the render
