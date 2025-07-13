@@ -130,8 +130,6 @@ public class Simulation extends SwingWorker<Void, Void> {
         final int[] count = new int[3];
 
         for (; running && TICKS != 0; TICKS--) {
-            forEachRemaining(Person::move); // Changes positions
-            finishMovement();
             forEachRemaining(Person::spread); // Spreads infections
             for (int i = 0; i < 3; i++) count[i] = 0;
             forEachRemaining(person ->
@@ -141,6 +139,8 @@ public class Simulation extends SwingWorker<Void, Void> {
                         case IMMUNE -> 2;
                     }] ++
             );
+            forEachRemaining(Person::move); // Changes positions
+            finishMovement();
             if (count[1] == 0) break; // If none are infected, end the simulation
             history.add(new Tick(count));
         }

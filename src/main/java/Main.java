@@ -14,21 +14,21 @@ public class Main {
         JFrame window = new JFrame("Customise Simulation");
         window.setLayout(new GridLayout(2, 5));
         Panel[] panels = new Panel[9];
-        panels[0] = new Panel<Double>(window, "Infection Chance", 0.5) {
+        panels[0] = new Panel<Double>(window, "Infection Chance", 0.9) {
             @Override
             Double get() throws NumberFormatException { // Gets the double value of the text, throws if outside its range
                 double value = Double.parseDouble(field.getText());
-                if (0 <= value && value <= 1) return value;
-                throw new NumberFormatException(); // No point adding description as it is always caught
+                if (value < 0 || 1 < value) throw new NumberFormatException(); // No point adding description as it is always caught
+                return value;
             }
         };
-        panels[1] = new IntPanel(window, "Infection Duration", 10);
-        panels[2] = new IntPanel(window, "Immunity Duration", 10);
-        panels[3] = new IntPanel(window, "Width", 100);
-        panels[4] = new IntPanel(window, "Height", 100);
-        panels[5] = new IntPanel(window, "Normal Count", 10000);
-        panels[6] = new IntPanel(window, "Infection Count", 100);
-        panels[7] = new IntPanel(window, "Immunity Count", 1000);
+        panels[1] = new IntPanel(window, "Infection Duration", 10, 1);
+        panels[2] = new IntPanel(window, "Immunity Duration", 10, 0);
+        panels[3] = new IntPanel(window, "Width", 100, 1);
+        panels[4] = new IntPanel(window, "Height", 100, 1);
+        panels[5] = new IntPanel(window, "Normal Count", 10000, 0);
+        panels[6] = new IntPanel(window, "Infection Count", 100, 1);
+        panels[7] = new IntPanel(window, "Immunity Count", 1000, 0);
         panels[8] = new Panel<Integer>(window, "Ticks", 100000) {
             @Override
             Integer get() throws NumberFormatException { // Same as intPanel, but returns -1 if blank
@@ -83,13 +83,17 @@ public class Main {
         }
     }
 
-    public static class IntPanel extends Panel <Integer> { // Panel designed for ints
-        private IntPanel(Container source, String title, int content) {
+    private static class IntPanel extends Panel <Integer> { // Panel designed for ints
+        private final int min;
+        private IntPanel(Container source, String title, int content, int min) {
             super(source, title, content);
+            this.min = min;
         }
         @Override
         Integer get() throws NumberFormatException { // Do I need to explain this
-            return Integer.parseInt(field.getText());
+            int value = Integer.parseInt(field.getText());
+            if (value < min) throw new NumberFormatException();
+            return value;
         }
     }
 }
