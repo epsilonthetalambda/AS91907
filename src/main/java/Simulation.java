@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 
-public class Simulation extends SwingWorker<Void, Void> {
+public class Simulation extends Thread {
     // Simulation parameters
     public final int WIDTH; // Width of the simulation
     public final int HEIGHT; // Height of the simulation
@@ -125,8 +125,7 @@ public class Simulation extends SwingWorker<Void, Void> {
     }
 
     @Override
-    protected Void doInBackground() {
-        // Used to iterate through each person
+    public void run() {
         final int[] count = new int[3];
 
         for (; running && TICKS != 0; TICKS--) {
@@ -144,11 +143,11 @@ public class Simulation extends SwingWorker<Void, Void> {
             if (count[1] == 0) break; // If none are infected, end the simulation
             history.add(new Tick(count));
         }
-        return null;
+
+        done();
     }
 
-    @Override
-    protected void done() {
+    private void done() {
         visualisation.dispose();
         if (!running) main.dispose(); // If running is false here, the simulation was manually closed
         else {

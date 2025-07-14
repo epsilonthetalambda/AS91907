@@ -52,7 +52,7 @@ public class Main {
                         (Integer) panels[7].read(),
                         (Integer) panels[8].read()
 
-                ).execute();
+                ).start();
             } catch (NumberFormatException ignored) {
                 System.out.println(window.getSize());
             }
