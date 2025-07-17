@@ -1,5 +1,19 @@
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JColorChooser;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
+import javax.swing.WindowConstants;
+import javax.swing.event.ChangeListener;
+import java.awt.Color;
+import java.awt.Desktop;
+import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
@@ -10,7 +24,7 @@ import java.util.function.Consumer;
 
 public class Simulation extends Thread {
     // Simulation parameters
-    public final int ID; // Appears on save file and all windows
+    public final int ID; // Unique within this instance of the program
     public final int WIDTH; // Width of the simulation
     public final int HEIGHT; // Height of the simulation
     public final double INFECTION_CHANCE; // Chance for each infected person to infect a normal person
@@ -30,6 +44,8 @@ public class Simulation extends Thread {
     private final Render visualisation; // Displays each cell's occupants in real time
     private final Render pie; // Displays the proportion of different states as a pie chart
     private final JLabel tickCounter;
+    private final JDialog colourChooser;
+    private final JColorChooser[] choosers;
 
     public final ArrayList<Tick> history; // Stores the total counts of each population each tick.
     private int delay = 0;
@@ -38,9 +54,9 @@ public class Simulation extends Thread {
 
     public Simulation(double infectionChance, int infectionDuration, int immunityDuration, int width, int height, int normalCount, int infectionCount, int immunityCount, int ticks) {
         super();
+        // Initialisation of parameters
         ID = Main.sims;
         Main.sims ++;
-        // Initialisation of parameters
         WIDTH = width;
         HEIGHT = height;
         INFECTION_COOLDOWN = infectionDuration;
@@ -65,7 +81,7 @@ public class Simulation extends Thread {
 
         // Creates the main GUI for the simulation
         main = new JFrame("Simulation " + ID);
-        main.setLayout(new GridLayout(2,1));
+        main.setLayout(new GridLayout(3,1));
         main.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         main.addWindowListener(new WindowAdapter() {
             @Override
@@ -96,6 +112,25 @@ public class Simulation extends Thread {
         });
         main.pack();
         main.setVisible(true);
+
+        colourChooser = new JDialog(main);
+        colourChooser.setLayout(new GridLayout(2,2));
+        choosers = new JColorChooser[4];
+        choosers[0] = chooser("Empty", EMPTY_COLOUR, l -> EMPTY_COLOUR = choosers[0].getColor());
+        choosers[1] = chooser("Normal", NORMAL_COLOUR, l -> NORMAL_COLOUR = choosers[1].getColor());
+        choosers[2] = chooser("Infected", INFECTED_COLOUR, l -> INFECTED_COLOUR = choosers[2].getColor());
+        choosers[3] = chooser("Immune", IMMUNE_COLOUR, l -> IMMUNE_COLOUR = choosers[3].getColor());
+
+        for (JColorChooser c : choosers) {
+            colourChooser.add(c);
+        }
+
+        colourChooser.setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
+        colourChooser.pack();
+
+        JButton changeColours = new JButton("Change Colours");
+        changeColours.addActionListener(l -> colourChooser.setVisible(true));
+        main.add(changeColours);
 
         finishMovement();
     }
@@ -138,6 +173,7 @@ public class Simulation extends Thread {
             chooser.setSelectedFile(new File("simulation" + ID + ".csv"));
 
             main.getContentPane().removeAll(); // Resets window
+            main.setLayout(new GridLayout(1,1));
             JButton button = new JButton("Save to CSV");
             main.add(button);
             button.addActionListener(l -> {
@@ -277,5 +313,12 @@ public class Simulation extends Thread {
                 };
             }
         };
+    }
+    private JColorChooser chooser(String title, Color initial, ChangeListener change) {
+        JColorChooser c = new JColorChooser(initial);
+        c.setBorder(BorderFactory.createTitledBorder(title));
+        c.setPreviewPanel(new JPanel());
+        c.getSelectionModel().addChangeListener(change);
+        return c;
     }
 }
