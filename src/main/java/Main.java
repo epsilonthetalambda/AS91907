@@ -9,15 +9,16 @@ import java.awt.Container;
 import java.awt.GridLayout;
 
 public class Main {
+    public static int sims = 0;
     public static void main(String[] args) {
         // Creates the main GUI, allowing for launching of simulation instances
-        JFrame window = new JFrame("Customise Simulation");
+        JFrame window = new JFrame("Simulation Launcher");
         window.setLayout(new GridLayout(2, 5));
         Panel[] panels = new Panel[9];
         panels[0] = new Panel<Double>(window, "Infection Chance", 0.9) {
             @Override
             Double get() throws NumberFormatException { // Gets the double value of the text, throws if outside its range
-                double value = Double.parseDouble(field.getText());
+                double value = Double.parseDouble(getText());
                 if (value < 0 || 1 < value) throw new NumberFormatException(); // No point adding description as it is always caught
                 return value;
             }
@@ -32,30 +33,32 @@ public class Main {
         panels[8] = new Panel<Integer>(window, "Ticks", 100000) {
             @Override
             Integer get() throws NumberFormatException { // Same as intPanel, but returns -1 if blank
-                String text = field.getText();
+                String text = getText();
                 if (text.isBlank()) return -1;
-                else return Integer.parseInt(text);
+                int value = Integer.parseInt(text);
+                if (value <= 0) throw new NumberFormatException();
+                return value;
             }
         };
         JButton start = new JButton("Start"); // Start simulation
         start.addActionListener(l -> {
-            for (Panel p : panels) p.setBackground(Color.WHITE);
-            try { // If any parses fail, button does nothing
-                new Simulation(
-                        (Double ) panels[0].read(),
-                        (Integer) panels[1].read(),
-                        (Integer) panels[2].read(),
-                        (Integer) panels[3].read(),
-                        (Integer) panels[4].read(),
-                        (Integer) panels[5].read(),
-                        (Integer) panels[6].read(),
-                        (Integer) panels[7].read(),
-                        (Integer) panels[8].read()
-
-                ).start();
-            } catch (NumberFormatException ignored) {
-                System.out.println(window.getSize());
+            Number[] values = new Number[9];
+            boolean valid = true;
+            for (int i = 0; i < 9; i++) {
+                values[i] = panels[i].read();
+                if (values[i] == null) valid = false;
             }
+            if (valid) new Simulation(
+                    (double) values[0],
+                    (int) values[1],
+                    (int) values[2],
+                    (int) values[3],
+                    (int) values[4],
+                    (int) values[5],
+                    (int) values[6],
+                    (int) values[7],
+                    (int) values[8]
+            ).start();
         });
         window.add(start);
         window.setSize(611,125); // Title length of Panels don't affect their preferredSize, so pack can't be used and I just hardcoded it
@@ -63,35 +66,35 @@ public class Main {
         window.setVisible(true);
     }
 
-    private abstract static class Panel <T extends Number> extends JPanel { // Wraps a JTextField in a titled border, handles reading
-        final JTextField field;
+    private abstract static class Panel <T extends Number> extends JTextField { // Wraps a JTextField in a titled border, handles reading
         private Panel(Container source, String title, Number content) {
+            super(String.valueOf(content));
             setBorder(BorderFactory.createTitledBorder(title)); // Fancy border
             setLayout(new GridLayout(1,1)); // Makes sure the JTextField fills the panel
-            field = new JTextField(String.valueOf(content)); // Initialises with given default value
-            add(field); // Adds the field
             source.add(this); // Adds itself to given container
         }
         abstract T get() throws NumberFormatException; // Reads the number value of the JTextField
-        public T read() throws NumberFormatException {
+        public T read() {
             try {
-                return get(); // Tries to return the value
+                T output = get();
+                setBackground(Color.WHITE);
+                return output; // Tries to return the value
             } catch (NumberFormatException e) { // If failed
                 setBackground(Color.RED); // Highlights the panel for the user to see the issue
-                throw e; // Throws
+                return null;
             }
         }
     }
 
-    private static class IntPanel extends Panel <Integer> { // Panel designed for ints
+    public static class IntPanel extends Panel <Integer> { // Panel designed for ints
         private final int min;
-        private IntPanel(Container source, String title, int content, int min) {
-            super(source, title, content);
+        IntPanel(Container source, String title, int auto, int min) {
+            super(source, title, auto);
             this.min = min;
         }
         @Override
         Integer get() throws NumberFormatException { // Do I need to explain this
-            int value = Integer.parseInt(field.getText());
+            int value = Integer.parseInt(getText());
             if (value < min) throw new NumberFormatException();
             return value;
         }

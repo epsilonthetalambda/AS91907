@@ -13,7 +13,7 @@ public abstract class Render extends Container { // Displays a dialog with custo
         this.w = w;
         this.h = h;
         if (needNewImage()) newImage(); // Generates a new image
-        window = new JFrame(title); // Creates a parent JFrame
+        window = new JFrame(title + s.ID); // Creates a parent JFrame
         window.setContentPane(this); // Makes itself the content pane
         setPreferredSize(new Dimension(w, h)); // Sets its preferred size to minimum still visible
         window.pack();
@@ -22,7 +22,7 @@ public abstract class Render extends Container { // Displays a dialog with custo
 
     @Override
     public void repaint() {
-        image.render();
+        if (isVisible()) image.render();
         super.repaint();
     }
 
@@ -31,6 +31,8 @@ public abstract class Render extends Container { // Displays a dialog with custo
         w = getWidth();
         h = getHeight();
         if (needNewImage()) newImage(); // Generates a new image
+        g.setColor(s.EMPTY_COLOUR);
+        g.fillRect(0,0,w,h);
         g.drawImage(image, (w - image.w) / 2, (h - image.h) / 2, null); // Draws the image
     }
 
