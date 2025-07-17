@@ -17,7 +17,6 @@ public abstract class Render extends Container { // Displays a dialog with custo
         window.setContentPane(this); // Makes itself the content pane
         setPreferredSize(new Dimension(w, h)); // Sets its preferred size to minimum still visible
         window.pack();
-        window.setVisible(true);
     }
 
     @Override
