@@ -32,10 +32,10 @@ public class Simulation extends Thread {
     public final int IMMUNITY_COOLDOWN; // Number of ticks since infection that a person cannot get reinfected
     public int TICKS; // Number of ticks remaining
 
-    public Color EMPTY_COLOUR = Color.BLACK;
     public Color NORMAL_COLOUR = Color.GREEN;
     public Color INFECTED_COLOUR = Color.RED;
     public Color IMMUNE_COLOUR = Color.BLUE;
+    public Color EMPTY_COLOUR = Color.BLACK;
 
     public Person[][] position; // Stores the People according to their positions
     public Person[][] movement; // People move here, sorting themselves, then position references this.
@@ -116,10 +116,10 @@ public class Simulation extends Thread {
         colourChooser = new JDialog(main);
         colourChooser.setLayout(new GridLayout(2,2));
         choosers = new JColorChooser[4];
-        choosers[0] = chooser("Empty", EMPTY_COLOUR, l -> EMPTY_COLOUR = choosers[0].getColor());
         choosers[1] = chooser("Normal", NORMAL_COLOUR, l -> NORMAL_COLOUR = choosers[1].getColor());
         choosers[2] = chooser("Infected", INFECTED_COLOUR, l -> INFECTED_COLOUR = choosers[2].getColor());
         choosers[3] = chooser("Immune", IMMUNE_COLOUR, l -> IMMUNE_COLOUR = choosers[3].getColor());
+        choosers[0] = chooser("Empty", EMPTY_COLOUR, l -> EMPTY_COLOUR = choosers[0].getColor());
 
         for (JColorChooser c : choosers) {
             colourChooser.add(c);

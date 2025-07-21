@@ -6,6 +6,7 @@ import javax.swing.WindowConstants;
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.GridLayout;
+import java.util.function.Consumer;
 
 public class Main {
     public static int sims = 0;
@@ -14,7 +15,7 @@ public class Main {
         JFrame window = new JFrame("Simulation Launcher");
         window.setLayout(new GridLayout(2, 5));
         Panel[] panels = new Panel[9];
-        panels[0] = new Panel<Double>(window, "Infection Chance", 0.9) {
+        panels[0] = new Panel<Double>(window, "Infection Chance", 0.75) {
             @Override
             Double get() throws NumberFormatException { // Gets the double value of the text, throws if outside its range
                 double value = Double.parseDouble(getText());
@@ -22,14 +23,14 @@ public class Main {
                 return value;
             }
         };
-        panels[1] = new IntPanel(window, "Infection Duration", 10, 1);
-        panels[2] = new IntPanel(window, "Immunity Duration", 10, 0);
-        panels[3] = new IntPanel(window, "Width", 100, 1);
-        panels[4] = new IntPanel(window, "Height", 100, 1);
-        panels[5] = new IntPanel(window, "Normal Count", 10000, 0);
-        panels[6] = new IntPanel(window, "Infection Count", 100, 1);
-        panels[7] = new IntPanel(window, "Immunity Count", 1000, 0);
-        panels[8] = new Panel<Integer>(window, "Ticks", 100000) {
+        panels[1] = new IntPanel(window, "Infection Duration", 16, 1);
+        panels[2] = new IntPanel(window, "Immunity Duration", 32, 0);
+        panels[3] = new IntPanel(window, "Width", 256, 1);
+        panels[4] = new IntPanel(window, "Height", 256, 1);
+        panels[5] = new IntPanel(window, "Normal Count", 65525, 0);
+        panels[6] = new IntPanel(window, "Infection Count", 1, 1);
+        panels[7] = new IntPanel(window, "Immunity Count", 0, 0);
+        panels[8] = new Panel<Integer>(window, "Ticks", 1048576) {
             @Override
             Integer get() throws NumberFormatException { // Same as intPanel, but returns -1 if blank
                 String text = getText();
