@@ -1,26 +1,7 @@
 public class Person {
     private final Simulation s;
 
-    private final boolean horizontal; // Whether we are going horizontally or vertically
-    private final int lane; // The lane we are in
-
-    private int step; // The current step of our movement. Each non-edge position has 2 step values
-    private final int MAX_POS; // The maximum position pos() can return
-    public int pos() { // Converts step to a position
-        if (step <= MAX_POS) {
-            return step;
-        } else {
-            return 2 * MAX_POS - step;
-        }
-    }
-    private int x() {
-        if (horizontal) return pos();
-        else return lane;
-    }
-    private int y() {
-        if (horizontal) return lane;
-        else return pos();
-    }
+    public int x, y;
 
     private int state; // Current state. == 0 -> normal, <= INFECTION_COOLDOWN -> infected, <= IMMUNITY_COOLDOWN immune, wraps back to 0
     public enum State { // Used externally
@@ -39,22 +20,45 @@ public class Person {
 
     public Person(Simulation s, int state) { // Constructor, whether we start infected
         this.s = s;
-        horizontal = Math.random() < 0.5; // Randomises axis
-        lane = (int) (Math.random() * (horizontal ? this.s.HEIGHT : this.s.WIDTH)); // Randomises the lane
-        MAX_POS = (horizontal ? this.s.WIDTH : this.s.HEIGHT) - 1; // Stores the max pos
-        step = (int) (MAX_POS * 2 * Math.random()); // Randomises the current step
+        x = (int) (Math.random() * s.WIDTH);
+        y = (int) (Math.random() * s.HEIGHT);
         reposition();
         this.state = state; // If infected, sets state to somewhere in infected range. Otherwise, normal
     }
-    public void move() { // Increments and wraps the step
-        step ++;
-        if (step == 2 * MAX_POS) step = 0;
+    public void move() { // Moves the person in a random direction
+        boolean[] available = new boolean[] {
+                true,
+                x > 0,
+                y > 0,
+                x < s.WIDTH - 1,
+                y < s.HEIGHT - 1
+        };
+        int o = 0;
+        for (boolean b : available) {
+            if (b) o ++;
+        }
+        int choice = (int) (Math.random() * o);
+        int i = 0;
+        while (choice > 0) {
+            i ++;
+            if (available[i]) choice --;
+        }
+        move(i);
         reposition();
     }
+    private void move(int i) {
+        switch (i) {
+            case 0 -> {}
+            case 1 -> x --;
+            case 2 -> y --;
+            case 3 -> x ++;
+            case 4 -> y ++;
+        }
+    }
     private void reposition() {
-        next = s.movement[x()][y()];
+        next = s.movement[x][y];
         if (next == null || state <= next.state) {
-            s.movement[x()][y()] = this;
+            s.movement[x][y] = this;
         } else {
             Person nextnext = next.next;
             while (nextnext != null && state > nextnext.state) {
@@ -67,7 +71,7 @@ public class Person {
     }
     public void spread() {
         if (state() == State.INFECTED) { // Tries to infect others if able
-            Person p = s.position[x()][y()];
+            Person p = s.position[x][y];
             while (p != null && p.state() == State.NORMAL) {
                 if (Math.random() < s.INFECTION_CHANCE) p.infected = true;
                 p = p.next;
