@@ -1,7 +1,8 @@
 public class Person {
     private final Simulation s;
 
-    public int x, y;
+    public int x;
+    public int y;
 
     private int state; // Current state. == 0 -> normal, <= INFECTION_COOLDOWN -> infected, <= IMMUNITY_COOLDOWN immune, wraps back to 0
     public enum State { // Used externally
