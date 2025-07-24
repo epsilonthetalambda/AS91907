@@ -6,7 +6,6 @@ import javax.swing.WindowConstants;
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.GridLayout;
-import java.util.function.Consumer;
 
 public class Main {
     public static int sims = 0;

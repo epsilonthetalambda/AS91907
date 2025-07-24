@@ -1,19 +1,19 @@
 public class Person {
+    public static final char NORMAL = 0;
+    public static final char INFECTED = 1;
+    public static final char IMMUNE = 2;
+    public static final char EMPTY = 3;
+
     private final Simulation s;
 
     public int x;
     public int y;
 
     private int state; // Current state. == 0 -> normal, <= INFECTION_COOLDOWN -> infected, <= IMMUNITY_COOLDOWN immune, wraps back to 0
-    public enum State { // Used externally
-        NORMAL,
-        INFECTED,
-        IMMUNE
-    }
-    public State state() { // Converts integer state to a State
-        if (state == 0) return State.NORMAL;
-        else if (state <= s.INFECTION_COOLDOWN) return State.INFECTED;
-        else return State.IMMUNE;
+    public char state() { // Converts integer state to a State
+        if (state == 0) return NORMAL;
+        if (state <= s.INFECTION_COOLDOWN) return INFECTED;
+        return IMMUNE;
     }
 
     private boolean infected = false; // Whether we will become infected next round
@@ -71,16 +71,16 @@ public class Person {
         }
     }
     public void spread() {
-        if (state() == State.INFECTED) { // Tries to infect others if able
+        if (state() == INFECTED) { // Tries to infect others if able
             Person p = s.position[x][y];
-            while (p != null && p.state() == State.NORMAL) {
+            while (p != null && p.state() == NORMAL) {
                 if (Math.random() < s.INFECTION_CHANCE) p.infected = true;
                 p = p.next;
             }
         }
     }
 
-    public State update() { // Updates the person's state. Returns it for tallying
+    public char update() { // Updates the person's state. Returns it for tallying
         if (infected) {
             infected = false;
             state = 1;

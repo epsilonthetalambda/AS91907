@@ -32,10 +32,12 @@ public class Simulation extends Thread {
     public final int IMMUNITY_COOLDOWN; // Number of ticks since infection that a person cannot get reinfected
     public int TICKS; // Number of ticks remaining
 
-    public Color NORMAL_COLOUR = Color.GREEN;
-    public Color INFECTED_COLOUR = Color.RED;
-    public Color IMMUNE_COLOUR = Color.BLUE;
-    public Color EMPTY_COLOUR = Color.BLACK;
+    public Color[] COLOR = new Color[]{
+            Color.GREEN,
+            Color.RED,
+            Color.BLUE,
+            Color.BLACK
+    };
 
     public Person[][] position; // Stores the People according to their positions
     public Person[][] movement; // People move here, sorting themselves, then position references this.
@@ -48,7 +50,7 @@ public class Simulation extends Thread {
     private final JColorChooser[] choosers;
     private int TICK_SPEED;
 
-    public final ArrayList<Tick> history; // Stores the total counts of each population each tick.
+    public final ArrayList<int[]> history; // Stores the total counts of each population each tick.
     public boolean running = true; // Whether to continue running as usual
 
     public Simulation(double infectionChance, int infectionDuration, int immunityDuration, int width, int height, int normalCount, int infectionCount, int immunityCount, int ticks, int tickSpeed) {
@@ -72,7 +74,7 @@ public class Simulation extends Thread {
 
 
         history = new ArrayList<>(Math.max(ticks, 0) + 1); // Initialises history with enough initial capacity, unless endless
-        history.add(new Tick(normalCount, infectionCount, immunityCount)); // Adds the initial state
+        history.add(new int[]{normalCount, infectionCount, immunityCount}); // Adds the initial state
 
         visualisation = initialiseVisualisation();
 
@@ -115,13 +117,20 @@ public class Simulation extends Thread {
         colourChooser = new JDialog(main);
         colourChooser.setLayout(new GridLayout(2,2));
         choosers = new JColorChooser[4];
-        choosers[1] = chooser("Normal", NORMAL_COLOUR, l -> NORMAL_COLOUR = choosers[1].getColor());
-        choosers[2] = chooser("Infected", INFECTED_COLOUR, l -> INFECTED_COLOUR = choosers[2].getColor());
-        choosers[3] = chooser("Immune", IMMUNE_COLOUR, l -> IMMUNE_COLOUR = choosers[3].getColor());
-        choosers[0] = chooser("Empty", EMPTY_COLOUR, l -> EMPTY_COLOUR = choosers[0].getColor());
-
-        for (JColorChooser c : choosers) {
-            colourChooser.add(c);
+        for (char i = 0; i < 4; i++) {
+            final char I = i;
+            choosers[i] = chooser(
+                    switch (i) {
+                        case Person.NORMAL -> "Normal";
+                        case Person.INFECTED -> "Infected";
+                        case Person.IMMUNE -> "Immune";
+                        case Person.EMPTY -> "Empty";
+                        default -> throw new IllegalStateException();
+                    },
+                    COLOR[i],
+                    l -> COLOR[I] = choosers[I].getColor()
+            );
+            colourChooser.add(choosers[i]);
         }
 
         colourChooser.setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
@@ -144,16 +153,17 @@ public class Simulation extends Thread {
             for (int i = 0; i < 3; i++) count[i] = 0;
             forEachRemaining(person ->
                     count[switch (person.update()) { // Updates states. The function returns the person's state, so it is used to tally.
-                        case NORMAL -> 0;
-                        case INFECTED -> 1;
-                        case IMMUNE -> 2;
+                        case Person.NORMAL -> 0;
+                        case Person.INFECTED -> 1;
+                        case Person.IMMUNE -> 2;
+                        default -> throw new IllegalStateException();
                     }] ++
             );
 
             forEachRemaining(Person::move); // Changes positions
             finishMovement();
             if (count[1] == 0) break; // If none are infected, end the simulation
-            history.add(new Tick(count));
+            history.add(count);
             while (System.currentTimeMillis() < prevMillis + TICK_SPEED) onSpinWait();
             prevMillis = System.currentTimeMillis();
         }
@@ -179,7 +189,9 @@ public class Simulation extends Thread {
                 if (chooser.showSaveDialog(main) == JFileChooser.APPROVE_OPTION) try { // showSaveDialog creates a popup, waits for user confirmation, then returns status (save approved, cancelled, errored)
                     // If user approved save, tries to write
                     FileWriter writer = new FileWriter(chooser.getSelectedFile());
-                    for (Tick tick : history) writer.write(tick.toString());
+                    for (int[] tick : history) writer.write(
+                            tick[0] + "," + tick[1] + "," +tick[2] + System.lineSeparator()
+                    );
                     writer.close();
                     Desktop.getDesktop().open(chooser.getSelectedFile().getParentFile());
                 } catch (IOException ignored) {}
@@ -209,16 +221,6 @@ public class Simulation extends Thread {
         }
     }
 
-    public record Tick(int normal, int infected, int immune) { // Stores the totals of one simulation tick
-        public Tick(int[] count) { // Turns an array into a Tick
-            this(count[0], count[1], count[2]);
-        }
-        @Override
-        public String toString() { // Outputs a CSV line corresponding to the tick's totals
-            return normal + "," + infected + ',' + immune + System.lineSeparator();
-        }
-    }
-
     private Render initialiseVisualisation() { // Allows you to see the cells in real time
         return new Render(this, "Visualisation ", WIDTH, HEIGHT) { // Creates the visualisation
             private int gridW, gridH; // The size of each cell in the grid, min of 1
@@ -241,30 +243,25 @@ public class Simulation extends Thread {
                         // For each cell
                         for (int x = 0; x < s.WIDTH; x++) {
                             for (int y = 0; y < s.HEIGHT; y++) {
-                                g.setColor(switch (renderedState(position[x][y])) { // Sets the colour of the cell
-                                    case null -> s.EMPTY_COLOUR;
-                                    case NORMAL -> s.NORMAL_COLOUR;
-                                    case INFECTED -> s.INFECTED_COLOUR;
-                                    case IMMUNE -> s.IMMUNE_COLOUR;
-                                });
+                                g.setColor(COLOR[renderedState(position[x][y])]);
                                 g.fillRect(x * gridW, y * gridH, gridW, gridH);  // Draws the cell
                             }
                         }
                     }
-                    private Person.State renderedState(Person pointer) { // Given the start of a list, returns the state that should be rendered
+                    private char renderedState(Person pointer) { // Given the start of a list, returns the state that should be rendered
                         /*  PRIORITY:
                         *   1. INFECTED
                         *   2. NORMAL
                         *   3. IMMUNE
                         *   4. EMPTY  */
-                        if (pointer == null) return null; // If no people, return null (EMPTY)
-                        Person.State rendered = pointer.state(); // Initialises the output value with the first element's state
+                        if (pointer == null) return Person.EMPTY; // If no people, return null (EMPTY)
+                        char rendered = pointer.state(); // Initialises the output value with the first element's state
                         boolean going = true;
                         for (; going && pointer != null; pointer = pointer.next) { // Loops through all Persons at that tile
                             switch (pointer.state()) {
-                                case INFECTED:
-                                    rendered = Person.State.INFECTED;
-                                case IMMUNE:
+                                case Person.INFECTED:
+                                    rendered = Person.INFECTED;
+                                case Person.IMMUNE:
                                     going = false;
                             }
                         }
@@ -296,12 +293,10 @@ public class Simulation extends Thread {
                     private double start;
                     @Override
                     public void render() {
-                        Tick t = history.getLast();
+                        int[] t = history.getLast();
                         start = 0;
 
-                        fill(t.normal, NORMAL_COLOUR);
-                        fill(t.infected, INFECTED_COLOUR);
-                        fill(t.immune, IMMUNE_COLOUR);
+                        for (int i = 0; i < 3; i++) fill(t[i], COLOR[i]);
                     }
 
                     private void fill(int amount, Color colour) {
