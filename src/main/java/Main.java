@@ -13,9 +13,14 @@ public class Main {
     public static void main(String[] args) {
         // Creates the main GUI, allowing for launching of simulation instances
         JFrame window = new JFrame("Simulation Launcher");
-        window.setLayout(new GridLayout(2, 5));
-        Panel[] panels = new Panel[9];
-        panels[0] = new Panel<Double>(window, "Infection Chance", 0.75) {
+        Panel[] panels = new Panel[10];
+        Container[] rows = new Container[] {
+                new Container(),
+                new Container(),
+                new JButton("Start")
+        };
+
+        panels[0] = new Panel<Double>(rows[0], "Infection Chance", 0.75) {
             @Override
             Double get() throws NumberFormatException { // Gets the double value of the text, throws if outside its range
                 double value = Double.parseDouble(getText());
@@ -23,50 +28,51 @@ public class Main {
                 return value;
             }
         };
-        panels[1] = new IntPanel(window, "Infection Duration", 16, 1);
-        panels[2] = new IntPanel(window, "Immunity Duration", 32, 0);
-        panels[3] = new IntPanel(window, "Width", 256, 1);
-        panels[4] = new IntPanel(window, "Height", 256, 1);
-        panels[5] = new IntPanel(window, "Normal Count", 65525, 0);
-        panels[6] = new IntPanel(window, "Infection Count", 1, 1);
-        panels[7] = new IntPanel(window, "Immunity Count", 0, 0);
-        panels[8] = new Panel<Integer>(window, "Ticks", 1048576) {
-            @Override
-            Integer get() throws NumberFormatException { // Same as intPanel, but returns -1 if blank
-                String text = getText();
-                if (text.isBlank()) return -1;
-                int value = Integer.parseInt(text);
-                if (value <= 0) throw new NumberFormatException();
-                return value;
-            }
-        };
-        JButton start = new JButton("Start"); // Start simulation
-        start.addActionListener(l -> {
-            Number[] values = new Number[9];
-            boolean valid = true;
-            for (int i = 0; i < 9; i++) {
-                values[i] = panels[i].read();
-                if (values[i] == null) valid = false;
-            }
-            if (valid) new Simulation(
-                    (double) values[0],
-                    (int) values[1],
-                    (int) values[2],
-                    (int) values[3],
-                    (int) values[4],
-                    (int) values[5],
-                    (int) values[6],
-                    (int) values[7],
-                    (int) values[8]
-            ).start();
-        });
-        window.add(start);
-        window.setSize(611,125); // Title length of Panels don't affect their preferredSize, so pack can't be used and I just hardcoded it
+        panels[1] = new IntPanel(rows[0], "Infection Duration", 16, 1);
+        panels[2] = new IntPanel(rows[0], "Immunity Duration", 32, 0);
+        panels[3] = new IntPanel(rows[0], "Width", 256, 1);
+        panels[4] = new IntPanel(rows[0], "Height", 256, 1);
+        panels[5] = new IntPanel(rows[1], "Normal Count", 65535, 0);
+        panels[6] = new IntPanel(rows[1], "Infection Count", 1, 1);
+        panels[7] = new IntPanel(rows[1], "Immunity Count", 0, 0);
+        panels[8] = new BlankIntPanel(rows[1], "Ticks", 1048576, -1,-1);
+        panels[9] = new BlankIntPanel(rows[1], "Tick Speed (ms)", 0, 0, 0);
+
+        window.setLayout(new GridLayout(3, 1));
+        for (Container row : rows) {
+            window.add(row);
+            if (row instanceof JButton) {
+                ((JButton) row).addActionListener(l -> {
+                    Number[] values = new Number[10];
+                    boolean valid = true;
+                    for (int i = 0; i < 10; i++) {
+                        values[i] = panels[i].read();
+                        if (values[i] == null) valid = false;
+                    }
+                    if (valid) new Simulation(
+                            (double) values[0],
+                            (int) values[1],
+                            (int) values[2],
+                            (int) values[3],
+                            (int) values[4],
+                            (int) values[5],
+                            (int) values[6],
+                            (int) values[7],
+                            (int) values[8],
+                            (int) values[9]
+                    ).start();
+                });
+            } else row.setLayout(new GridLayout(1,5));
+        }
+        window.pack();
+        System.out.println(window.getSize());
+        System.out.println(window.getContentPane().getSize());
+        window.setSize(611,168); // Title length of Panels don't affect their preferredSize, so pack can't be used and I just hardcoded it
         window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         window.setVisible(true);
     }
 
-    private abstract static class Panel <T extends Number> extends JTextField { // Wraps a JTextField in a titled border, handles reading
+    private abstract static class Panel <T extends Number> extends JTextField { // Wraps a JTextField in a titled border, handles reading number values
         private Panel(Container source, String title, Number content) {
             super(String.valueOf(content));
             setBorder(BorderFactory.createTitledBorder(title)); // Fancy border
@@ -86,7 +92,7 @@ public class Main {
         }
     }
 
-    public static class IntPanel extends Panel <Integer> { // Panel designed for ints
+    public static class IntPanel extends Panel <Integer> { // Panel designed for integers
         private final int min;
         IntPanel(Container source, String title, int auto, int min) {
             super(source, title, auto);
@@ -97,6 +103,19 @@ public class Main {
             int value = Integer.parseInt(getText());
             if (value < min) throw new NumberFormatException();
             return value;
+        }
+    }
+
+    public static class BlankIntPanel extends IntPanel { // IntPanel, but returns given value instead of null when input is blank
+        private final int blankValue;
+        BlankIntPanel(Container source, String title, int auto, int min, int blankValue) {
+            super(source, title, auto, min);
+            this.blankValue = blankValue;
+        }
+        @Override
+        Integer get() throws NumberFormatException { // Do I need to explain this
+            if (getText().isBlank()) return blankValue;
+            return super.get();
         }
     }
 }

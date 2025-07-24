@@ -46,13 +46,12 @@ public class Simulation extends Thread {
     private final JLabel tickCounter;
     private final JDialog colourChooser;
     private final JColorChooser[] choosers;
+    private int TICK_SPEED;
 
     public final ArrayList<Tick> history; // Stores the total counts of each population each tick.
-    private int delay = 0;
-
     public boolean running = true; // Whether to continue running as usual
 
-    public Simulation(double infectionChance, int infectionDuration, int immunityDuration, int width, int height, int normalCount, int infectionCount, int immunityCount, int ticks) {
+    public Simulation(double infectionChance, int infectionDuration, int immunityDuration, int width, int height, int normalCount, int infectionCount, int immunityCount, int ticks, int tickSpeed) {
         super();
         // Initialisation of parameters
         ID = Main.sims;
@@ -63,12 +62,13 @@ public class Simulation extends Thread {
         IMMUNITY_COOLDOWN = INFECTION_COOLDOWN + immunityDuration;
         INFECTION_CHANCE = infectionChance;
         TICKS = ticks;
+        TICK_SPEED = tickSpeed;
         // Initialisation of cells
         position = new Person[WIDTH][HEIGHT];
         movement = new Person[WIDTH][HEIGHT];
         for (int i = 0; i < normalCount; i++) new Person(this, 0);
-        for (int i = 0; i < infectionCount; i++) new Person(this, (int) (Math.random() * infectionDuration) + 1);
-        for (int i = 0; i < immunityCount; i++) new Person(this, (int) (Math.random() * immunityDuration) + infectionDuration + 1);
+        for (int i = 0; i < infectionCount; i++) new Person(this, 1);
+        for (int i = 0; i < immunityCount; i++) new Person(this, infectionDuration + 1);
 
 
         history = new ArrayList<>(Math.max(ticks, 0) + 1); // Initialises history with enough initial capacity, unless endless
@@ -104,11 +104,10 @@ public class Simulation extends Thread {
         tickCounter = new JLabel();
         tickCounter.setHorizontalAlignment(SwingConstants.CENTER);
         main.add(tickCounter);
-        Main.IntPanel delay = new Main.IntPanel(main, "Tick Delay (ms)", 0, 0);
-        delay.addActionListener(l -> {
-            try {
-                this.delay = delay.read();
-            } catch (NumberFormatException ignored) {}
+        Main.BlankIntPanel speed = new Main.BlankIntPanel(main, "Tick Speed (ms)", TICK_SPEED, 0, 0);
+        speed.addActionListener(l -> {
+            Integer s = speed.read();
+            if (s != null) TICK_SPEED = s;
         });
         main.pack();
         main.setVisible(true);
@@ -155,7 +154,7 @@ public class Simulation extends Thread {
             finishMovement();
             if (count[1] == 0) break; // If none are infected, end the simulation
             history.add(new Tick(count));
-            while (System.currentTimeMillis() < prevMillis + delay) onSpinWait();
+            while (System.currentTimeMillis() < prevMillis + TICK_SPEED) onSpinWait();
             prevMillis = System.currentTimeMillis();
         }
 
@@ -242,25 +241,7 @@ public class Simulation extends Thread {
                         // For each cell
                         for (int x = 0; x < s.WIDTH; x++) {
                             for (int y = 0; y < s.HEIGHT; y++) {
-                                Person.State rendered = null; // Stores which state should be displayed
-                                Person p = s.position[x][y];
-                                if (p != null) { // If there is at least one Person
-
-                                /*  When the rendering is happening, each list is ordered NORMAL, INFECTED, IMMUNE.
-                                    The order off priority for rendering is INFECTED, IMMUNE, NORMAL.
-                                    We start with NORMAL, and if no other states show up, it stays.
-                                    If an INFECTED shows up, we can immediately break with that state.
-                                    If we get to an IMMUNE, there has not been any INFECTED, as if there had been, we would have broken. That means we can immediately break with that state.  */
-
-                                    rendered = Person.State.NORMAL; // Defaults to NORMAL
-                                    for (; p != null; p = p.next) { // Loops through all Persons at that tile
-                                        if (p.state() != Person.State.NORMAL) { // If someone is not NORMAL
-                                            rendered = p.state(); // Render that state
-                                            break;
-                                        }
-                                    }
-                                }
-                                g.setColor(switch (rendered) { // Sets the colour of the cell
+                                g.setColor(switch (renderedState(position[x][y])) { // Sets the colour of the cell
                                     case null -> s.EMPTY_COLOUR;
                                     case NORMAL -> s.NORMAL_COLOUR;
                                     case INFECTED -> s.INFECTED_COLOUR;
@@ -269,6 +250,25 @@ public class Simulation extends Thread {
                                 g.fillRect(x * gridW, y * gridH, gridW, gridH);  // Draws the cell
                             }
                         }
+                    }
+                    private Person.State renderedState(Person pointer) { // Given the start of a list, returns the state that should be rendered
+                        /*  PRIORITY:
+                        *   1. INFECTED
+                        *   2. NORMAL
+                        *   3. IMMUNE
+                        *   4. EMPTY  */
+                        if (pointer == null) return null; // If no people, return null (EMPTY)
+                        Person.State rendered = pointer.state(); // Initialises the output value with the first element's state
+                        boolean going = true;
+                        for (; going && pointer != null; pointer = pointer.next) { // Loops through all Persons at that tile
+                            switch (pointer.state()) {
+                                case INFECTED:
+                                    rendered = Person.State.INFECTED;
+                                case IMMUNE:
+                                    going = false;
+                            }
+                        }
+                        return rendered;
                     }
                 };
             }
