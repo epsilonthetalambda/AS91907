@@ -12,6 +12,7 @@ public class Main {
     public static void main(String[] args) {
         // Creates the main GUI, allowing for launching of simulation instances
         JFrame window = new JFrame("Simulation Launcher");
+        //noinspection rawtypes
         Panel[] panels = new Panel[10];
         Container[] rows = new Container[] {
                 new Container(),
@@ -54,9 +55,11 @@ public class Main {
                             (int) values[2],
                             (int) values[3],
                             (int) values[4],
-                            (int) values[5],
-                            (int) values[6],
-                            (int) values[7],
+                            new int[]{
+                                    (int) values[5],
+                                    (int) values[6],
+                                    (int) values[7]
+                            },
                             (int) values[8],
                             (int) values[9]
                     ).start();

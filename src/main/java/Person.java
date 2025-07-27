@@ -9,8 +9,8 @@ public class Person {
     public int x;
     public int y;
 
-    private int state; // Current state. == 0 -> normal, <= INFECTION_COOLDOWN -> infected, <= IMMUNITY_COOLDOWN immune, wraps back to 0
-    public char state() { // Converts integer state to a State
+    private int state; // Internal state. == 0 -> normal, <= INFECTION_COOLDOWN -> infected, <= IMMUNITY_COOLDOWN immune, wraps back to 0
+    public char state() { // Converts internal state to an external state
         if (state == 0) return NORMAL;
         if (state <= s.INFECTION_COOLDOWN) return INFECTED;
         return IMMUNE;
@@ -19,12 +19,17 @@ public class Person {
     private boolean infected = false; // Whether we will become infected next round
     public Person next = null; // The next Person in the list
 
-    public Person(Simulation s, int state) { // Constructor, whether we start infected
+    public Person(Simulation s, char state) { // Constructor, intialised with a state
         this.s = s;
         x = (int) (Math.random() * s.WIDTH);
         y = (int) (Math.random() * s.HEIGHT);
         reposition();
-        this.state = state; // If infected, sets state to somewhere in infected range. Otherwise, normal
+        this.state = switch (state) {
+            case NORMAL -> 0;
+            case INFECTED -> 1;
+            case IMMUNE -> s.INFECTION_COOLDOWN + 1;
+            default -> throw new IllegalStateException();
+        }; // If infected, sets state to somewhere in infected range. Otherwise, normal
     }
     public void move() { // Moves the person in a random direction
         boolean[] available = new boolean[] {

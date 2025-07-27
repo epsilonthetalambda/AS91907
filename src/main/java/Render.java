@@ -21,7 +21,7 @@ public abstract class Render extends Container { // Displays a dialog with custo
 
     @Override
     public void repaint() {
-        if (isVisible()) image.render();
+        image.render();
         super.repaint();
     }
 

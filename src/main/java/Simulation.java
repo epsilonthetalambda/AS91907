@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.function.Consumer;
 
 public class Simulation extends Thread {
@@ -30,21 +31,20 @@ public class Simulation extends Thread {
     public final double INFECTION_CHANCE; // Chance for each infected person to infect a normal person
     public final int INFECTION_COOLDOWN; // Number of ticks since infection that a person can infect others
     public final int IMMUNITY_COOLDOWN; // Number of ticks since infection that a person cannot get reinfected
-    public int TICKS; // Number of ticks remaining
+    private int TICKS; // Number of ticks remaining
 
     public Color[] COLOR = new Color[]{
             Color.GREEN,
             Color.RED,
             Color.BLUE,
-            Color.BLACK
+            new Color(243, 243, 243)
     };
 
     public Person[][] position; // Stores the People according to their positions
     public Person[][] movement; // People move here, sorting themselves, then position references this.
 
     private final JFrame main; // The main window, allowing for toggling of visualisations, and termination.
-    private final Render visualisation; // Displays each cell's occupants in real time
-    private final Render pie; // Displays the proportion of different states as a pie chart
+    private final Render[] renders; // Stores the toggleable renders
     private final JLabel tickCounter;
     private final JDialog colourChooser;
     private final JColorChooser[] choosers;
@@ -53,7 +53,7 @@ public class Simulation extends Thread {
     public final ArrayList<int[]> history; // Stores the total counts of each population each tick.
     public boolean running = true; // Whether to continue running as usual
 
-    public Simulation(double infectionChance, int infectionDuration, int immunityDuration, int width, int height, int normalCount, int infectionCount, int immunityCount, int ticks, int tickSpeed) {
+    public Simulation(double infectionChance, int infectionDuration, int immunityDuration, int width, int height, int[] startingCount, int ticks, int tickSpeed) {
         super();
         // Initialisation of parameters
         ID = Main.sims;
@@ -68,18 +68,20 @@ public class Simulation extends Thread {
         // Initialisation of cells
         position = new Person[WIDTH][HEIGHT];
         movement = new Person[WIDTH][HEIGHT];
-        for (int i = 0; i < normalCount; i++) new Person(this, 0);
-        for (int i = 0; i < infectionCount; i++) new Person(this, 1);
-        for (int i = 0; i < immunityCount; i++) new Person(this, infectionDuration + 1);
+        for (char i = 0; i < 3; i++) {
+            for (int j = 0; j < startingCount[i]; j++) {
+                new Person(this, i);
+            }
+        }
 
 
         history = new ArrayList<>(Math.max(ticks, 0) + 1); // Initialises history with enough initial capacity, unless endless
-        history.add(new int[]{normalCount, infectionCount, immunityCount}); // Adds the initial state
+        history.add(startingCount); // Adds the initial state
 
-        visualisation = initialiseVisualisation();
-
-        pie = initialisePie(normalCount + infectionCount + immunityCount);
-
+        renders = new Render[] {
+                initialiseVisualisation(),
+                initialisePie(Arrays.stream(startingCount).sum())
+        };
 
         // Creates the main GUI for the simulation
         main = new JFrame("Simulation " + ID);
@@ -95,13 +97,18 @@ public class Simulation extends Thread {
         JMenuBar bar = new JMenuBar();
         main.setJMenuBar(bar);
 
-        JMenuItem visualisation = new JMenuItem("Visualisation");
-        visualisation.addActionListener(l -> this.visualisation.toggle());
-        bar.add(visualisation);
+        JMenuItem[] renderButtons = new JMenuItem[2];
 
-        JMenuItem pie = new JMenuItem("Pie Chart");
-        pie.addActionListener(l -> this.pie.toggle());
-        bar.add(pie);
+        for (int i = 0; i < 2; i++) {
+            renderButtons[i] = new JMenuItem(switch (i) {
+                case 0 -> "Visualisaton";
+                case 1 -> "Pie";
+                default -> throw new IllegalStateException();
+            });
+            final int I = i;
+            renderButtons[i].addActionListener(l -> renders[I].toggle());
+            bar.add(renderButtons[i]);
+        }
 
         tickCounter = new JLabel();
         tickCounter.setHorizontalAlignment(SwingConstants.CENTER);
@@ -128,7 +135,10 @@ public class Simulation extends Thread {
                         default -> throw new IllegalStateException();
                     },
                     COLOR[i],
-                    l -> COLOR[I] = choosers[I].getColor()
+                    l -> {
+                        COLOR[I] = choosers[I].getColor();
+                        choosers[I].setBackground(COLOR[I]);
+                    }
             );
             colourChooser.add(choosers[i]);
         }
@@ -164,6 +174,7 @@ public class Simulation extends Thread {
             finishMovement();
             if (count[1] == 0) break; // If none are infected, end the simulation
             history.add(count);
+            System.out.println(System.currentTimeMillis() - prevMillis);
             while (System.currentTimeMillis() < prevMillis + TICK_SPEED) onSpinWait();
             prevMillis = System.currentTimeMillis();
         }
@@ -172,39 +183,35 @@ public class Simulation extends Thread {
     }
 
     private void done() {
-        visualisation.dispose();
-        pie.dispose();
-        if (!running) main.dispose(); // If running is false here, the simulation was manually closed
-        else {
-            running = false; // Makes the window now terminate simulation on close
-            // Creates a file chooser for saving the simulation
-            JFileChooser chooser = new JFileChooser();
-            chooser.setSelectedFile(new File("simulation" + ID + ".csv"));
+        for (Render r : renders) r.dispose();
+        main.setJMenuBar(null);
+        running = false; // Makes the window now terminate simulation on close
+        // Creates a file chooser for saving the simulation
+        JFileChooser chooser = new JFileChooser();
+        chooser.setSelectedFile(new File("simulation" + ID + ".csv"));
 
-            main.getContentPane().removeAll(); // Resets window
-            main.setLayout(new GridLayout(1,1));
-            JButton button = new JButton("Save to CSV");
-            main.add(button);
-            button.addActionListener(l -> {
-                if (chooser.showSaveDialog(main) == JFileChooser.APPROVE_OPTION) try { // showSaveDialog creates a popup, waits for user confirmation, then returns status (save approved, cancelled, errored)
-                    // If user approved save, tries to write
-                    FileWriter writer = new FileWriter(chooser.getSelectedFile());
-                    for (int[] tick : history) writer.write(
-                            tick[0] + "," + tick[1] + "," +tick[2] + System.lineSeparator()
-                    );
-                    writer.close();
-                    Desktop.getDesktop().open(chooser.getSelectedFile().getParentFile());
-                } catch (IOException ignored) {}
-            });
-            main.revalidate();
-        }
+        main.getContentPane().removeAll(); // Resets window
+        main.setLayout(new GridLayout(1,1));
+        JButton button = new JButton("Save to CSV");
+        main.add(button);
+        button.addActionListener(l -> {
+            if (chooser.showSaveDialog(main) == JFileChooser.APPROVE_OPTION) try { // showSaveDialog creates a popup, waits for user confirmation, then returns status (save approved, cancelled, errored)
+                // If user approved save, tries to write
+                FileWriter writer = new FileWriter(chooser.getSelectedFile());
+                for (int[] tick : history) writer.write(
+                        tick[0] + "," + tick[1] + "," +tick[2] + System.lineSeparator()
+                );
+                writer.close();
+                Desktop.getDesktop().open(chooser.getSelectedFile().getParentFile());
+            } catch (IOException ignored) {}
+        });
+        main.revalidate();
     }
 
     private void finishMovement() { // Runs after movement
         position = movement; // Copies the movement reference to position
         movement = new Person[WIDTH][HEIGHT]; // Resets movement
-        visualisation.repaint(); // Repaints the visualisation
-        pie.repaint(); // Repaints the visualisation
+        for (Render r : renders) if (r.isVisible()) r.repaint();
         if (TICKS > 0) tickCounter.setText(TICKS + " ticks left.");
     }
 
@@ -311,6 +318,7 @@ public class Simulation extends Thread {
     }
     private JColorChooser chooser(String title, Color initial, ChangeListener change) {
         JColorChooser c = new JColorChooser(initial);
+        c.setBackground(initial);
         c.setBorder(BorderFactory.createTitledBorder(title));
         c.setPreviewPanel(new JPanel());
         c.getSelectionModel().addChangeListener(change);
