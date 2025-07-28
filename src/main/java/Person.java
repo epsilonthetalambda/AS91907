@@ -89,6 +89,7 @@ public class Person {
         if (infected) {
             infected = false;
             state = 1;
+            s.INFECTIONS ++;
         } else if (state > 0) {
             state ++;
             if (state > s.IMMUNITY_COOLDOWN) state = 0;

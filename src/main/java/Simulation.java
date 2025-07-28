@@ -49,6 +49,7 @@ public class Simulation extends Thread {
     private final JDialog colourChooser;
     private final JColorChooser[] choosers;
     private int TICK_SPEED;
+    public int INFECTIONS;
 
     public final ArrayList<int[]> history; // Stores the total counts of each population each tick.
     public boolean running = true; // Whether to continue running as usual
@@ -65,6 +66,7 @@ public class Simulation extends Thread {
         INFECTION_CHANCE = infectionChance;
         TICKS = ticks;
         TICK_SPEED = tickSpeed;
+        INFECTIONS = startingCount[Person.INFECTED];
         // Initialisation of cells
         position = new Person[WIDTH][HEIGHT];
         movement = new Person[WIDTH][HEIGHT];
@@ -155,12 +157,14 @@ public class Simulation extends Thread {
 
     @Override
     public void run() {
-        final int[] count = new int[3];
 
         long prevMillis = System.currentTimeMillis();
         for (; running && TICKS != 0; TICKS--) {
             forEachRemaining(Person::spread); // Spreads infections
-            for (int i = 0; i < 3; i++) count[i] = 0;
+            forEachRemaining(Person::move); // Changes positions
+            finishMovement();
+
+            final int[] count = new int[3];
             forEachRemaining(person ->
                     count[switch (person.update()) { // Updates states. The function returns the person's state, so it is used to tally.
                         case Person.NORMAL -> 0;
@@ -169,12 +173,8 @@ public class Simulation extends Thread {
                         default -> throw new IllegalStateException();
                     }] ++
             );
-
-            forEachRemaining(Person::move); // Changes positions
-            finishMovement();
-            if (count[1] == 0) break; // If none are infected, end the simulation
             history.add(count);
-            System.out.println(System.currentTimeMillis() - prevMillis);
+            if (count[1] == 0) break; // If none are infected, end the simulation
             while (System.currentTimeMillis() < prevMillis + TICK_SPEED) onSpinWait();
             prevMillis = System.currentTimeMillis();
         }
@@ -198,9 +198,22 @@ public class Simulation extends Thread {
             if (chooser.showSaveDialog(main) == JFileChooser.APPROVE_OPTION) try { // showSaveDialog creates a popup, waits for user confirmation, then returns status (save approved, cancelled, errored)
                 // If user approved save, tries to write
                 FileWriter writer = new FileWriter(chooser.getSelectedFile());
-                for (int[] tick : history) writer.write(
-                        tick[0] + "," + tick[1] + "," +tick[2] + System.lineSeparator()
-                );
+                writer.write("Current Normal,Current Infected,Current Immune,Normal Change,Infected Change,Immune Change,Total Infected" + System.lineSeparator());
+                int[] tick = history.getFirst();
+                writer.write(
+                        tick[0] + "," + tick[1] + "," +tick[2] +
+                        ",0,0,0," +
+                        INFECTIONS +
+                        System.lineSeparator());
+                int[] nextTick;
+                for (int i = 1; i < history.size(); i++) {
+                    nextTick = history.get(i);
+                    writer.write(
+                            nextTick[0] + "," + nextTick[1] + "," + nextTick[2] + "," +
+                            (nextTick[0] - tick[0]) + "," + (nextTick[1] - tick[1]) + "," + (nextTick[2] - tick[2]) +
+                            System.lineSeparator());
+                    tick = nextTick;
+                }
                 writer.close();
                 Desktop.getDesktop().open(chooser.getSelectedFile().getParentFile());
             } catch (IOException ignored) {}
