@@ -1,7 +1,13 @@
-import javax.swing.JFrame;
-import java.awt.Container;
-import java.awt.Dimension;
+/*
+ *  AS91907.Render
+ *  Last Updated: 01/08/2025
+ *  Purpose: A window that holds a custom Image, used to display live visualisations.
+ */
+
 import java.awt.Graphics;
+import java.awt.Dimension;
+import java.awt.Container;
+import javax.swing.JFrame;
 
 public abstract class Render extends Container { // Displays a dialog with custom graphics using Image
     public int w, h; // Stores width and height
@@ -20,7 +26,7 @@ public abstract class Render extends Container { // Displays a dialog with custo
     }
 
     @Override
-    public void repaint() {
+    public void repaint() { // Inserts a call for the Image to redraw into the repaint call
         image.render();
         super.repaint();
     }
@@ -30,14 +36,14 @@ public abstract class Render extends Container { // Displays a dialog with custo
         w = getWidth();
         h = getHeight();
         if (needNewImage()) newImage(); // Generates a new image
-        g.setColor(s.COLOR[Person.EMPTY]);
+        g.setColor(Main.COLOUR[Main.EMPTY]);
         g.fillRect(0,0,w,h);
         g.drawImage(image, (w - image.w) / 2, (h - image.h) / 2, null); // Draws the image
     }
 
     public abstract boolean needNewImage(); // Returns whether the image needs to be recreated
 
-    public abstract void newImage(); // Where the image is initialised, allowing inherited abstraction
+    public abstract void newImage(); // Where the image is initialised, allowing for the Image to be abstracted
     public void toggle() { // Toggles visibility of the render
         window.setVisible(!window.isVisible());
     }
