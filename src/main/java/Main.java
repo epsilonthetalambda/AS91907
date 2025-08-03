@@ -230,7 +230,7 @@ public class Main {
         @Override
         Double get() throws NumberFormatException {
             double value = Double.parseDouble(getText()); // Parses the value, throws if invalid
-            if (value < min || max < value) throw new NumberFormatException(); // If value outside range, throw
+            if (value <= min || max < value) throw new NumberFormatException(); // If value outside range, throw
             return value; // Otherwise, return
         }
     }
