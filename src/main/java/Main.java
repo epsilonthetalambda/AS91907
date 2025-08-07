@@ -4,20 +4,8 @@
  *  Purpose: A static class that creates a window for initialising simulations.
  */
 
-import java.awt.Color;
-import java.awt.Container;
-import java.awt.GridLayout;
-import java.awt.Toolkit;
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JColorChooser;
-import javax.swing.JFrame;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-import javax.swing.KeyStroke;
-import javax.swing.WindowConstants;
+import java.awt.*;
+import javax.swing.*;
 import javax.swing.colorchooser.AbstractColorChooserPanel;
 
 public class Main {
