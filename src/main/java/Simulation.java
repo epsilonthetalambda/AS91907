@@ -4,23 +4,15 @@
  *  Purpose: Runs a simulation with the given parameters on a new thread. Allows viewing of a visualisation and pie chart, and facilitates writing simulation details to a CSV file when the simulation ends.
  */
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.awt.Color;
-import java.awt.Desktop;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowAdapter;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JFileChooser;
-import javax.swing.SwingConstants;
-import javax.swing.WindowConstants;
+import javax.swing.*;
 
 public class Simulation extends Thread {
     // Labels for the different renders in the simulation
@@ -102,6 +94,7 @@ public class Simulation extends Thread {
                 case PIE -> "Pie";
                 default -> throw new IllegalStateException();
             });
+            renderButton.setAccelerator(KeyStroke.getKeyStroke((char) ('1' + i), Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
             renderButton.addActionListener(l -> renders[i].toggle());
             bar.add(renderButton);
         }
@@ -184,6 +177,7 @@ public class Simulation extends Thread {
             } catch (IOException ignored) {} // Do nothing if write failed
         });
         main.add(button);
+        button.requestFocusInWindow();
         main.revalidate();
     }
 

@@ -1,21 +1,11 @@
 /*
  *  AS91907.Main
- *  Last Updated: 01/08/2025
+ *  Last Updated: 07/08/2025
  *  Purpose: A static class that creates a window for initialising simulations.
  */
 
-import java.awt.Color;
-import java.awt.Container;
-import java.awt.GridLayout;
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JColorChooser;
-import javax.swing.JFrame;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-import javax.swing.WindowConstants;
+import java.awt.*;
+import javax.swing.*;
 import javax.swing.colorchooser.AbstractColorChooserPanel;
 
 public class Main {
@@ -73,9 +63,13 @@ public class Main {
             tabs[i].setOpaque(true);
             tabs[i].setBackground(Color.WHITE);
 
+            // Adds a keyboard shortcut to activate the tab
+            tabs[i].setAccelerator(KeyStroke.getKeyStroke((char) ('1' + i), Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
+
             // Adds an action listener to change the current content pane to its corresponding pane
             tabs[i].addActionListener(l -> {
                 window.setContentPane(panes[i]);
+                panes[i].getComponent(0).requestFocusInWindow(); // Resets the focus to the first element, otherwise focus would remain on other pane.
                 window.revalidate();
             });
 
